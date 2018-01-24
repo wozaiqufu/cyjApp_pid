@@ -439,7 +439,7 @@ void MainWindow::slot_on_mainTimer_timeout()
         data[5] = 0;
         data[6] = 0;
         data[7] = 0;
-        qDebug()<<"m_algorithm.right():"<<m_algorithm.left();
+        qDebug()<<"m_algorithm.left():"<<m_algorithm.left();
         qDebug()<<"m_algorithm.right():"<<m_algorithm.right();
         qDebug()<<"m_algorithm.accelerator():"<<m_algorithm.accelerator();
         qDebug()<<"m_algorithm.deaccelerator():"<<m_algorithm.deaccelerator();
