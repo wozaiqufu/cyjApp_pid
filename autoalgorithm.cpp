@@ -19,7 +19,7 @@ autoAlgorithm::autoAlgorithm(QObject *parent) : QObject(parent),
 {
     //p_track = new TrackMemory;
     p_pid = new PID(0.02,30,-30,0.006,0.0005,0.001);
-    p_anglePID = new PID(0.02,60,-60,2,1,3);
+    p_anglePID = new PID(0.005,80,-75,5,0.3,5);
 }
 
 void autoAlgorithm::update()
@@ -30,12 +30,12 @@ void autoAlgorithm::update()
     if(pidOut<0)
     {
         m_right = 0;
-        m_left = -pidOut;
+        m_left = -pidOut+25;
         m_acc = 0;
     }
     else
     {
-        m_right = pidOut;
+        m_right = pidOut+30;
         m_left = 0;
         m_acc = 0;
     }
