@@ -224,13 +224,13 @@ void MainWindow::slot_on_initSurface()
 
 void MainWindow::slot_on_testAlgorithm()
 {
-    emit sig_angleCmm2Algorithm(-30);
+    emit sig_angleCmm2Algorithm(-15);
 }
 
 
 void MainWindow::slot_on_testAlgorithm2()
 {
-   emit sig_angleCmm2Algorithm(30);
+   emit sig_angleCmm2Algorithm(15);
 }
 
 void MainWindow::slot_on_testAlgorithmLoadData()
@@ -404,9 +404,9 @@ void MainWindow::slot_on_mainTimer_timeout()
         qDebug()<<"Auto is on";
         m_algorithm.update();
         uchar data[8] = {0,0,0,0,0,0,0,0};
-        data[0] = 0 +//forward
-                2*0 +//back
-                4*1 +//neutral
+        data[0] = 0 +//back
+                2*0 +//forward
+                4*0 +//neutral
                 8*0 +//stop
                 16*m_cyjData_actual.scram +
                 32*m_cyjData_actual.light +

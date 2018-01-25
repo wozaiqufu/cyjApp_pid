@@ -96,7 +96,7 @@ private:
     AlgorithmType       m_type;//PID or TrackMemory
     QTime               m_time;
     TrackMemory         *p_track;
-    PID                 *p_pid;
+    PID                 *p_disntancePID;
     PID                 *p_anglePID;
     static const int    MILEDELTA = 20;//path.txt mile increment is 20cm
     static const double RATIO = 0.8;//k1*track + k2*pid k2=RATIO
