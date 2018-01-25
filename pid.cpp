@@ -8,6 +8,7 @@ class PIDImpl
 public:
     PIDImpl(double dt,double max,double min,double Kp,double Kd,double Ki);
     ~PIDImpl();
+    void setAllowError(double e);
     double calculate(double setpoint,double pv);
 
 private:
@@ -19,6 +20,7 @@ private:
     double _Ki;
     double _pre_error;
     double _integral;
+    double _allowError;
 };
 
 PID::PID(double dt,double max,double min,double Kp,double Kd,double Ki)
@@ -34,6 +36,11 @@ double PID::calculate(double setpoint, double pv)
 PID::~PID()
 {
     delete m_pidImpl;
+}
+
+void PID::setAllowError(double e)
+{
+    m_pidImpl->setAllowError(e);
 }
 
 /**
@@ -63,8 +70,8 @@ double PIDImpl::calculate(double setpoint, double pv)
 {
     //caculate error
     double error = setpoint - pv;
-//    if(abs(setpoint-pv)<abs(setpoint*0.1))
-//        return 0;
+    if(abs(setpoint-pv)<_allowError)
+        return 0;
     if(abs(setpoint-pv)<1)
         return 0;
    //proportional term
@@ -92,5 +99,13 @@ double PIDImpl::calculate(double setpoint, double pv)
 PIDImpl::~PIDImpl()
 {
 
+}
+
+void PIDImpl::setAllowError(double e)
+{
+    if(e<0)
+        return;
+    else
+        _allowError = e;
 }
 

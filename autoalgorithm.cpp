@@ -18,8 +18,10 @@ autoAlgorithm::autoAlgorithm(QObject *parent) : QObject(parent),
   m_angleCmm(0)
 {
     //p_track = new TrackMemory;
-    p_disntancePID = new PID(0.005,20,-20,0.08,0.005,0.0006);
+    p_disntancePID = new PID(0.005,20,-20,0.09,0.005,0.0001);
     p_anglePID = new PID(0.005,80,-75,5,0.1,0.4);
+    p_disntancePID->setAllowError(100);
+    p_anglePID->setAllowError(1);
 }
 
 void autoAlgorithm::update()
