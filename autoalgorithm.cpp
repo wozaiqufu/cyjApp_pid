@@ -18,18 +18,18 @@ autoAlgorithm::autoAlgorithm(QObject *parent) : QObject(parent),
   m_angleCmm(0)
 {
     //p_track = new TrackMemory;
-   // p_disntancePID = new PID(0.005,15,-15,0.02,0.001,0.001);
+    p_disntancePID = new PID(0.005,20,-20,0.08,0.005,0.0006);
     p_anglePID = new PID(0.005,80,-75,5,0.1,0.4);
 }
 
 void autoAlgorithm::update()
 {
-//    double spliceAngle = p_disntancePID->calculate(2000,m_lateralOffset);
-//     qDebug()<<"m_lateralOffset:"<<m_lateralOffset;
-//    qDebug()<<"distance PID output:"<<0-spliceAngle;
-//    double pidOut = p_anglePID->calculate(0-spliceAngle,m_spliceAnlge);
-    double pidOut = p_anglePID->calculate(m_angleCmm,m_spliceAnlge);
-    qDebug()<<"m_angleCmm:"<<m_angleCmm;
+    double spliceAngle = p_disntancePID->calculate(2000,m_lateralOffset);
+     qDebug()<<"m_lateralOffset:"<<m_lateralOffset;
+    qDebug()<<"distance PID output:"<<0-spliceAngle;
+    double pidOut = p_anglePID->calculate(0-spliceAngle,m_spliceAnlge);
+//    double pidOut = p_anglePID->calculate(m_angleCmm,m_spliceAnlge);
+    //qDebug()<<"m_angleCmm:"<<m_angleCmm;
     qDebug()<<"spliceAnlge:"<<m_spliceAnlge;
     if(pidOut<0)
     {

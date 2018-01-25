@@ -404,7 +404,7 @@ void MainWindow::slot_on_mainTimer_timeout()
         qDebug()<<"Auto is on";
         m_algorithm.update();
         uchar data[8] = {0,0,0,0,0,0,0,0};
-        data[0] = 0 +//back
+        data[0] = 1 +//back
                 2*0 +//forward
                 4*0 +//neutral
                 8*0 +//stop
