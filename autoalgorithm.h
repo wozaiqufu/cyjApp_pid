@@ -94,7 +94,7 @@ private:
     int                 m_mile_current;//current mile
     StageType           m_stage;//teach mode or auto mode
     AlgorithmType       m_type;//PID or TrackMemory
-    QTime               m_time;
+    QTime                                                 m_time;
     TrackMemory         *p_track;
     PID                 *p_disntancePID;
     PID                 *p_anglePID;

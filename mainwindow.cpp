@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
 m_controlMode(Local),
 m_mileInstant(0),
 m_mileMeter(0),
+m_speed(0),
 m_direction(Forward),
 m_hydraulic1(0),
 m_hydraulic2(0)
@@ -18,10 +19,15 @@ m_hydraulic2(0)
     ui->setupUi(this);
 	initStatusTable();
     initCYJActualData();
-	connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(slot_on_initSICK511()));
+    //init CAN
+    if( slot_on_initCAN())
+        slot_on_readFrame();
+    //init SICK511
+    slot_on_initSICK511();
+    //connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(slot_on_initSICK511()));
 	connect(ui->pushButton_4, SIGNAL(clicked()), this, SLOT(slot_on_stopSICK511()));
-    connect(ui->pushButton_5,SIGNAL(clicked()),this,SLOT(slot_on_initCAN()));
-    connect(ui->pushButton_6,SIGNAL(clicked()),this,SLOT(slot_on_readFrame()));
+//    connect(ui->pushButton_5,SIGNAL(clicked()),this,SLOT(slot_on_initCAN()));
+//    connect(ui->pushButton_6,SIGNAL(clicked()),this,SLOT(slot_on_readFrame()));
     connect(ui->pushButton_initSurface,SIGNAL(clicked()),this,SLOT(slot_on_initSurface()));
     connect(ui->pushButton_connect400,SIGNAL(clicked()),this,SLOT(slot_on_initSICK400()));
     connect(ui->pushButton_stop400,SIGNAL(clicked()),this,SLOT(slot_on_stopSICK400()));
@@ -174,7 +180,7 @@ void MainWindow::slot_on_stopSICK511()
     emit sig_stopPermanentReq();
 }
 
-void MainWindow::slot_on_initCAN()
+bool MainWindow::slot_on_initCAN()
 {
     m_can.moveToThread(&m_thread_CAN);
     m_timer_CAN.setInterval(1);
@@ -185,10 +191,7 @@ void MainWindow::slot_on_initCAN()
     connect(&m_can,SIGNAL(sig_statusTable(QString)),this,SLOT(slot_on_updateStatusTable(QString)));
     connect(&m_timer_CAN,SIGNAL(timeout()),&m_can,SLOT(slot_dowork()));
     connect(&m_thread_CAN,SIGNAL(finished()),&m_thread_CAN,SLOT(deleteLater()));
-    m_can.init(0);
-//    //for test only
-//    _CANReady = true;
-    //     //_can8900.CAN_Init(0);
+    return m_can.init(0);//0 for CAN0
 }
 
 void MainWindow::slot_on_initSICK400()
@@ -252,6 +255,7 @@ void MainWindow::slot_on_startTeach()
  void MainWindow::slot_on_mileAccumulator_timeout()
  {
      m_mileMeter += m_mileInstant;
+
  }
 /****************************************************************************/
 /****************************************************************************/
@@ -264,6 +268,7 @@ INFORM:
 *************************/
 void MainWindow::slot_on_mainTimer_timeout()
 {
+    //qDebug()<<"slot_on_mainTimer_timeout is triggered!";
 //    CYJData actual2surface;
 //    actual2surface.startdata1 = 0xAA;
 //    actual2surface.startdata2 = 0x55;
@@ -459,9 +464,9 @@ void MainWindow::slot_on_mainTimer_timeout()
     //UI Update:update vehicle params
     ui->label_spliceAngle->setText(QString::number(m_cyjData_actual.spliceAngle-(LEFTLIMIT+RIGHTLIMNIT)/2));
     ui->label_mile->setText(QString::number(m_mileMeter));
-    //ui->label_courseAngle->setText(QString::number(m_courseAngle));
     ui->label_engineSpeed->setText(QString::number(m_cyjData_actual.engine));
-    //ui->label_lateralOffset->setText(QString::number(m_lateralOffset));
+    ui->label_speed->setText(QString::number(m_speed));
+//    ui->label_lateralOffset->setText(QString::number(m_lateralOffset));
     ui->label_gear->setText(QString::number(m_cyjData_actual.neutral));
     switch (m_controlMode)
     {
@@ -489,8 +494,6 @@ void MainWindow::slot_on_mainTimer_timeout()
     {
         ui->label_direction->setText("Backward");
     }
-    ui->label_surfaceLight->setText(QString::number(m_cyjData_surface.light));
-    ui->label_surfaceHorn->setText(QString::number(m_cyjData_surface.horn));
     //console output
 //    qDebug()<<"=========================actual data are:";
 //    qDebug()<<"neutral:"<<m_cyjData_actual.neutral;
@@ -693,6 +696,7 @@ void MainWindow::slot_on_updateCAN305(QVector<int> vec)
     m_cyjData_actual.spliceAngle = vec.at(4);
     m_cyjData_actual.temperature = vec.at(5);
     m_mileInstant = 1.08*(vec.at(6)*256 + vec.at(7));
+    m_speed = m_mileInstant * 5;
     qDebug()<<"m_mileInstant:"<<m_mileInstant;
 }
 

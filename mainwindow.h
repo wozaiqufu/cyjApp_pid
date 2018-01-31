@@ -44,7 +44,7 @@ signals:
 private slots:
     void slot_on_initSICK511();
     void slot_on_stopSICK511();
-    void slot_on_initCAN();
+    bool slot_on_initCAN();
     void slot_on_initSICK400();
     void slot_on_stopSICK400();
     void slot_on_readFrame();
@@ -91,6 +91,7 @@ private:
 	ControlMode m_controlMode;
     int m_mileInstant;//in cm
     int m_mileMeter;
+    int m_speed;
     //test
     int m_hydraulic1;
     int m_hydraulic2;

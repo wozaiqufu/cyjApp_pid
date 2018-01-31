@@ -72,8 +72,6 @@ double PIDImpl::calculate(double setpoint, double pv)
     double error = setpoint - pv;
     if(abs(setpoint-pv)<_allowError)
         return 0;
-    if(abs(setpoint-pv)<1)
-        return 0;
    //proportional term
     double Pout = _Kp * error;
 

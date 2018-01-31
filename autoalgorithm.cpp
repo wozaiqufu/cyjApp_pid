@@ -18,15 +18,15 @@ autoAlgorithm::autoAlgorithm(QObject *parent) : QObject(parent),
   m_angleCmm(0)
 {
     //p_track = new TrackMemory;
-    p_disntancePID = new PID(0.005,20,-20,0.09,0.005,0.0001);
-    p_anglePID = new PID(0.005,80,-75,5,0.1,0.4);
-    p_disntancePID->setAllowError(100);
-    p_anglePID->setAllowError(1);
+    p_disntancePID = new PID(0.1,20,-20,0.08,0.05,0.00001);
+    p_anglePID = new PID(0.005,80,-80,6,0.08,0.14);
+    p_disntancePID->setAllowError(15);
+    p_anglePID->setAllowError(0.4);
 }
 
 void autoAlgorithm::update()
 {
-    double spliceAngle = p_disntancePID->calculate(2000,m_lateralOffset);
+    double spliceAngle = p_disntancePID->calculate(400,m_lateralOffset);
      qDebug()<<"m_lateralOffset:"<<m_lateralOffset;
     qDebug()<<"distance PID output:"<<0-spliceAngle;
     double pidOut = p_anglePID->calculate(0-spliceAngle,m_spliceAnlge);
@@ -36,14 +36,14 @@ void autoAlgorithm::update()
     if(pidOut<0)
     {
         m_right = 0;
-        m_left = -pidOut+25;
-        m_acc = 0;
+        m_left = -pidOut+30;
+        m_acc = 45;
     }
     else
     {
-        m_right = pidOut+30;
+        m_right = pidOut+35;
         m_left = 0;
-        m_acc = 0;
+        m_acc = 45;
     }
 
 }
@@ -143,7 +143,7 @@ void autoAlgorithm::slot_on_updateCourseAngle(int angle)
 
 void autoAlgorithm::slot_on_updateLateralOffset(int of)
 {
-    m_lateralOffset = of;
+    m_lateralOffset = of/10;
     //qDebug()<<"m_lateralOffset is :"<<of;
 }
 
