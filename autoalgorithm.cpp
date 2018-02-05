@@ -1,5 +1,5 @@
 #include "autoalgorithm.h"
-#include "pid.h"
+
 #include "trackmemory.h"
 #include <QtCore>
 #include <QVector>
@@ -15,37 +15,49 @@ autoAlgorithm::autoAlgorithm(QObject *parent) : QObject(parent),
   m_right(0),
   m_acc(0),
   m_spliceAnlge(0),
-  m_angleCmm(0)
+  m_angleCmm(0),
+  p_disntancePID(0.005,20,-20,0.15,0.0005,1),
+  p_anglePID(0.005,80,-80,7,0.008,0.5)
 {
     //p_track = new TrackMemory;
-    p_disntancePID = new PID(0.1,20,-20,0.08,0.05,0.00001);
-    p_anglePID = new PID(0.005,80,-80,6,0.08,0.14);
-    p_disntancePID->setAllowError(15);
-    p_anglePID->setAllowError(0.4);
+    //p_disntancePID = new PID_Incremental(0.005,20,-20,0.06,0.0005,0.0001);
+     //p_disntancePID = new PID(0.005,20,-20,0.08,0.0005,0.0001);
+
+
+    //p_disntancePID = new PID(0.005,20,-20,0.15,0.0005,0.5);
+
+
+//    p_anglePID = new PID(0.005,80,-80,6,0.005,0.5);//add 30 and 45
+    // p_anglePID = new PID(0.005,80,-80,10,0.005,0.5);
+    //p_anglePID = new PID(0.005,80,-80,15,0.005,0.5);
+
+
+    //p_anglePID = new pid_angle(0.005,80,-80,6,0.008,0.5);
+    p_disntancePID.setAllowError(15);
+    p_anglePID.setAllowError(0.4);
 }
 
 void autoAlgorithm::update()
 {
-    double spliceAngle = p_disntancePID->calculate(400,m_lateralOffset);
-     qDebug()<<"m_lateralOffset:"<<m_lateralOffset;
-    qDebug()<<"distance PID output:"<<0-spliceAngle;
-    double pidOut = p_anglePID->calculate(0-spliceAngle,m_spliceAnlge);
-//    double pidOut = p_anglePID->calculate(m_angleCmm,m_spliceAnlge);
-    //qDebug()<<"m_angleCmm:"<<m_angleCmm;
-    qDebug()<<"spliceAnlge:"<<m_spliceAnlge;
+    double deltaSpliceAngle = p_disntancePID.calculate(400,m_lateralOffset);
+    //qDebug()<<"m_lateralOffset:"<<m_lateralOffset;
+    double angleSet = 0-deltaSpliceAngle;
+    //qDebug()<<"angleSet:"<<angleSet;
+    double pidOut = p_anglePID.calculate(angleSet,m_spliceAnlge);
+    //qDebug()<<"m_spliceAnlge:"<<m_spliceAnlge;
+    //qDebug()<<"pidOut:"<<pidOut;
     if(pidOut<0)
     {
         m_right = 0;
-        m_left = -pidOut+30;
-        m_acc = 45;
+        m_left = -pidOut;
+        m_acc = 80;
     }
     else
     {
-        m_right = pidOut+35;
+        m_right = pidOut;
         m_left = 0;
-        m_acc = 45;
+        m_acc = 80;
     }
-
 }
 
 void autoAlgorithm::finish()

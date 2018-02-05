@@ -5,9 +5,11 @@
 #include <QStringList>
 #include <QByteArray>
 #include <QTime>
+#include "pid.h"
+#include "pid_angle.h"
 
 class TrackMemory;
-class PID;
+
 
 class autoAlgorithm : public QObject
 {
@@ -94,10 +96,10 @@ private:
     int                 m_mile_current;//current mile
     StageType           m_stage;//teach mode or auto mode
     AlgorithmType       m_type;//PID or TrackMemory
-    QTime                                                 m_time;
+    QTime               m_time;
     TrackMemory         *p_track;
-    PID                 *p_disntancePID;
-    PID                 *p_anglePID;
+    PID                 p_disntancePID;
+    PID                 p_anglePID;
     static const int    MILEDELTA = 20;//path.txt mile increment is 20cm
     static const double RATIO = 0.8;//k1*track + k2*pid k2=RATIO
     int                 m_left;

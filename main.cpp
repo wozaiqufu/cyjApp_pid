@@ -37,7 +37,7 @@ void myMessageOutput(QtMsgType type, const char *msg)
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    //qInstallMsgHandler(myMessageOutput);
+    qInstallMsgHandler(myMessageOutput);
     qRegisterMetaType<QVector<int> >("QVector<int>");
     qRegisterMetaType<QAbstractSocket::SocketError>("QAbstractSocket::SocketError");
     qRegisterMetaType<CYJData>("CYJData");

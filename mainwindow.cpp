@@ -13,6 +13,9 @@ m_mileInstant(0),
 m_mileMeter(0),
 m_speed(0),
 m_direction(Forward),
+m_sendCount(0),
+m_bIsDeacc(false),
+  _acc(50),
 m_hydraulic1(0),
 m_hydraulic2(0)
 {
@@ -36,10 +39,16 @@ m_hydraulic2(0)
     connect(ui->pushButton_2,SIGNAL(clicked()),this,SLOT(slot_on_testAlgorithm2()));
     connect(ui->pushButton_loaddata,SIGNAL(clicked()),this,SLOT(slot_on_testAlgorithmLoadData()));
     connect(ui->pushButton_startTeach,SIGNAL(clicked()),this,SLOT(slot_on_startTeach()));
-    connect(ui->pushButton_stretch,SIGNAL(clicked()),this,SLOT(slot_on_stretch()));
-    connect(ui->pushButton_retract,SIGNAL(clicked()),this,SLOT(slot_on_retract()));
     connect(&m_timer_main,SIGNAL(timeout()),this,SLOT(slot_on_mainTimer_timeout()));
+    connect(&m_timer_acc,SIGNAL(timeout()),this,SLOT(slot_on_acc_timeout()));
+
     connect(&m_timer_mileAccumulator,SIGNAL(timeout()),this,SLOT(slot_on_mileAccumulator_timeout()));
+    connect(ui->pushButton_acc5,SIGNAL(clicked()),this,SLOT(slot_on_acc85()));
+    connect(ui->pushButton_acc60,SIGNAL(clicked()),this,SLOT(slot_on_acc90()));
+    connect(ui->pushButton_acc75,SIGNAL(clicked()),this,SLOT(slot_on_acc95()));
+    connect(ui->pushButton_acc88,SIGNAL(clicked()),this,SLOT(slot_on_acc100()));
+    connect(ui->pushButton_acc105,SIGNAL(clicked()),this,SLOT(slot_on_acc105()));
+
 	QButtonGroup* check_group[2];
 	check_group[0] = new QButtonGroup(this);
 	check_group[1] = new QButtonGroup(this);
@@ -255,7 +264,11 @@ void MainWindow::slot_on_startTeach()
  void MainWindow::slot_on_mileAccumulator_timeout()
  {
      m_mileMeter += m_mileInstant;
+ }
 
+ void MainWindow::slot_on_acc_timeout()
+ {
+     _acc = 85;
  }
 /****************************************************************************/
 /****************************************************************************/
@@ -325,6 +338,8 @@ void MainWindow::slot_on_mainTimer_timeout()
     m_cyjData_actual.startdata2 = 0x55;
     m_cyjData_actual.enddata = 0xFF;
     emit sig_informInfo2surface(m_cyjData_actual);
+
+    m_controlMode = Auto;
     //checkControlMode();
    /*
      *notify algorithm
@@ -406,12 +421,12 @@ void MainWindow::slot_on_mainTimer_timeout()
         }
     case Auto:
         {
-        qDebug()<<"Auto is on";
+       // qDebug()<<"Auto is on";
         m_algorithm.update();
         uchar data[8] = {0,0,0,0,0,0,0,0};
         data[0] = 1 +//back
                 2*0 +//forward
-                4*0 +//neutral
+                4*0+//neutral
                 8*0 +//stop
                 16*m_cyjData_actual.scram +
                 32*m_cyjData_actual.light +
@@ -429,15 +444,16 @@ void MainWindow::slot_on_mainTimer_timeout()
         data[5] = m_cyjData_actual.back;
         data[6] = m_algorithm.left();
         data[7] = m_algorithm.right();
+//        data[6] = 0;
+//        data[7] = 0;
 //        data[6] = m_hydraulic1;
 //        data[7] = m_hydraulic2;
 //        qDebug()<<"m_hydraulic1:"<<m_hydraulic1;
 //        qDebug()<<"m_hydraulic2:"<<m_hydraulic2;
+       // qDebug()<<"m_bIsDeacc:"<<m_bIsDeacc;
         m_can.slot_on_sendFrame(0x161,8,data);
-        data[0] = m_algorithm.accelerator();
-        data[1] = m_algorithm.deaccelerator();
-//        data[0] = 0;
-//        data[1] = 0;
+        data[0] = _acc;
+        data[1] = 0;
         data[2] = 0;
         data[3] = 0;
         data[4] = 0;
@@ -446,9 +462,10 @@ void MainWindow::slot_on_mainTimer_timeout()
         data[7] = 0;
         qDebug()<<"m_algorithm.left():"<<m_algorithm.left();
         qDebug()<<"m_algorithm.right():"<<m_algorithm.right();
-        qDebug()<<"m_algorithm.accelerator():"<<m_algorithm.accelerator();
-        qDebug()<<"m_algorithm.deaccelerator():"<<m_algorithm.deaccelerator();
+        qDebug()<<"m_algorithm.accelerator():"<<data[0];
+        qDebug()<<"m_algorithm.deaccelerator():"<< data[1];
         m_can.slot_on_sendFrame(0x261,8,data);
+
         break;
         }
     default:
@@ -465,7 +482,7 @@ void MainWindow::slot_on_mainTimer_timeout()
     ui->label_spliceAngle->setText(QString::number(m_cyjData_actual.spliceAngle-(LEFTLIMIT+RIGHTLIMNIT)/2));
     ui->label_mile->setText(QString::number(m_mileMeter));
     ui->label_engineSpeed->setText(QString::number(m_cyjData_actual.engine));
-    ui->label_speed->setText(QString::number(m_speed));
+    //ui->label_speed->setText(QString::number(m_speed));
 //    ui->label_lateralOffset->setText(QString::number(m_lateralOffset));
     ui->label_gear->setText(QString::number(m_cyjData_actual.neutral));
     switch (m_controlMode)
@@ -570,6 +587,31 @@ void MainWindow::slot_on_retract()
     m_hydraulic2 = 40;
 }
 
+void MainWindow::slot_on_acc85()
+{
+    _acc = 10;
+}
+
+void MainWindow::slot_on_acc90()
+{
+    _acc = 85;
+}
+
+void MainWindow::slot_on_acc95()
+{
+    _acc = 75;
+}
+
+void MainWindow::slot_on_acc100()
+{
+    _acc = 88;
+}
+
+void MainWindow::slot_on_acc105()
+{
+    _acc = 105;
+}
+
 void MainWindow::slot_on_updateCAN304(QVector<int> vec)
 {
     //qDebug()<<"CAN304:"<<vec;
@@ -639,6 +681,10 @@ void MainWindow::slot_on_updateCAN304(QVector<int> vec)
     }
     //reserved
     m_cyjData_actual.zero = (vec.at(0)/64)%2;
+    if(  (vec.at(1)%4==2))
+    {
+        m_timer_acc.start(10000);
+    }
     //extract control mode
     switch(vec.at(1)%4)
     {
@@ -684,7 +730,7 @@ void MainWindow::slot_on_updateCAN304(QVector<int> vec)
 
 void MainWindow::slot_on_updateCAN305(QVector<int> vec)
 {
-    qDebug()<<"CAN305:"<<vec;
+    //qDebug()<<"CAN305:"<<vec;
     if(vec.size()<8)
     {
         return;
@@ -697,7 +743,8 @@ void MainWindow::slot_on_updateCAN305(QVector<int> vec)
     m_cyjData_actual.temperature = vec.at(5);
     m_mileInstant = 1.08*(vec.at(6)*256 + vec.at(7));
     m_speed = m_mileInstant * 5;
-    qDebug()<<"m_mileInstant:"<<m_mileInstant;
+    qDebug()<<"m_speed"<<m_speed;
+    //qDebug()<<"m_mileInstant:"<<m_mileInstant;
 }
 
 void MainWindow::slot_on_surfaceUpdate(CYJData cyj)

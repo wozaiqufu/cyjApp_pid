@@ -56,12 +56,18 @@ private slots:
     void slot_on_mainTimer_timeout();
     void slot_on_teachTimer_timeout();
     void slot_on_mileAccumulator_timeout();
+    void slot_on_acc_timeout();
     void slot_on_setAlgorithm();
 	void slot_on_setMode();
     void slot_on_startAccumMile();
     void slot_on_stopAccumMile();
     void slot_on_stretch();
     void slot_on_retract();
+    void slot_on_acc85();
+    void slot_on_acc90();
+    void slot_on_acc95();
+    void slot_on_acc100();
+    void slot_on_acc105();
 public slots:
     void slot_on_updateStatusTable(QString qstr);
     void slot_on_updateCAN304(QVector<int> vec);
@@ -83,6 +89,7 @@ private:
     QTimer					m_timer_main;
     QTimer					m_timer_surface;
     QTimer                  m_timer_mileAccumulator;
+    QTimer                  m_timer_acc;
     /*************************************************************************
      * vehicle states to surface
 	 *
@@ -92,6 +99,9 @@ private:
     int m_mileInstant;//in cm
     int m_mileMeter;
     int m_speed;
+    int m_sendCount;
+    bool m_bIsDeacc;
+    int _acc;
     //test
     int m_hydraulic1;
     int m_hydraulic2;

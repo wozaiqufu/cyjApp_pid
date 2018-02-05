@@ -1,6 +1,8 @@
 #include "pid.h"
 #include <cmath>
 #include <QDebug>
+#include <QList>
+
 using namespace std;
 
 class PIDImpl
@@ -9,7 +11,7 @@ public:
     PIDImpl(double dt,double max,double min,double Kp,double Kd,double Ki);
     ~PIDImpl();
     void setAllowError(double e);
-    double calculate(double setpoint,double pv);
+    double calculate(const double setpoint,const double pv);
 
 private:
     double _dt;
@@ -19,8 +21,10 @@ private:
     double _Kd;
     double _Ki;
     double _pre_error;
-    double _integral;
+    double _integration;
     double _allowError;
+    QList<double> _errorList;
+    const static int INTEGRATIONLENGTH = 20;
 };
 
 PID::PID(double dt,double max,double min,double Kp,double Kd,double Ki)
@@ -53,8 +57,7 @@ PIDImpl::PIDImpl(double dt, double max, double min, double Kp, double Kd, double
       _Kp(Kp),
       _Kd(Kd),
       _Ki(Ki),
-      _pre_error(0),
-      _integral(0)
+      _pre_error(0)
 {
     if(dt <= 0)
     {
@@ -66,31 +69,58 @@ PIDImpl::PIDImpl(double dt, double max, double min, double Kp, double Kd, double
     }
 }
 
-double PIDImpl::calculate(double setpoint, double pv)
+double PIDImpl::calculate(const double setpoint, const double pv)
 {
+    double _integration = 0;
+    double set = setpoint;
     //caculate error
-    double error = setpoint - pv;
-    if(abs(setpoint-pv)<_allowError)
+    double error = set - pv;
+    if(_allowError==15)
+    //qDebug()<<"error:"<<error;
+    if(abs(set-pv)<_allowError)
         return 0;
    //proportional term
     double Pout = _Kp * error;
-
+    //qDebug()<<"Pout:"<<Pout;
     //Derivative term
-    double derivative = (error - _pre_error) / _dt;
-    double Dout = _Kd * derivative;
+    double Dout = _Kd * (error - _pre_error) / _dt;
+    //qDebug()<<"Dout:"<<Dout;
     _pre_error = error;
     //Integral term
-    _integral += error * _dt;
-    double Iout = _Ki * _integral;
+    if(_errorList.size()<INTEGRATIONLENGTH)
+    {
+        _errorList.append(error * _dt);
+    }
+    else
+    {
+        _errorList.removeFirst();
+        _errorList.append(error * _dt);
+    }
+    if(_errorList.isEmpty())
+        return 0;
+    for(int i=0;i<_errorList.size();i++)
+    {
+       // qDebug()<<"_errorList:"<<_errorList;
+        _integration +=  _errorList.at(i);
+    }
+    //qDebug()<<"error * _dt"<<error * _dt;
+    double Iout = _Ki * _integration;
+    //qDebug()<<"_integration:"<<_integration;
+    //qDebug()<<"_Ki:"<<_Ki;
+     if(_allowError==15)
+     {/*
+          qDebug()<<"Iout:"<<Iout;
+          qDebug()<<"_errorList:"<<_errorList;*/
+     }
 
     //Total output
     double output = Pout + Dout + Iout;
+   // qDebug()<<"before max output:"<<output;
     //restrict to max/min
     if(output>_max)
         output = _max;
     if(output<_min)
          output = _min;
-
     return output;
 }
 
