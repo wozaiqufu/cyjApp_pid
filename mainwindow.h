@@ -5,12 +5,14 @@
 #include <QTimer>
 #include <QTableWidget>
 #include <QThread>
+#include <QList>
 #include "SICK511.h"
 #include "sick400.h"
 #include "CAN.h"
 #include "surfacecommunication.h"
 #include "autoalgorithm.h"
 #include "cyjdata.h"
+#include "datasaver.h"
 //test only
 #include "trackmemory.h"
 
@@ -27,18 +29,34 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 private:
-     void initStatusTable();
-     void checkControlMode();
+     void updateControlMode();
      void initCYJActualData();
+     void initCYJSurfaceData();
+     void updateAcc();
+     void updateDirection();
+     void initDataSaver();
+     void updateData2DataSaver();
+     void updateData2Surface();
+     void updateData2Algorithm();
+     void loadData();
+     void QString_to_Int(QString str, QList <int> &data);
+     bool checkSensorsAndSurface();
 signals:
     void sig_stopPermanentReq();
-    void sig_informDirection(int);
     void sig_informInfo2surface(CYJData);
-    void sig_autoInfo2Algorithm(bool);
     void sig_informAlgrithmMile(int);
+    void sig_speed2Algorithm(int);
     void finished();
     void sig_statusTable(QString);
     void sig_spliceAngle2Algorithm(int);
+    void sig_mile(int);
+    void sig_velocity(int);
+    void sig_angle(int);
+    void sig_acc(int);
+    void sig_angleOrg(int);//angle read in path.txt
+    void sig_hydraulic(int);
+    void sig_diretion2Alg(bool);
+    void sig_addTickCount();
     //for test
     void sig_angleCmm2Algorithm(int);
 private slots:
@@ -49,30 +67,22 @@ private slots:
     void slot_on_stopSICK400();
     void slot_on_readFrame();
     void slot_on_initSurface();
-    void slot_on_testAlgorithm();
-    void slot_on_testAlgorithm2();
-    void slot_on_testAlgorithmLoadData();
-    void slot_on_startTeach();
     void slot_on_mainTimer_timeout();
-    void slot_on_teachTimer_timeout();
     void slot_on_mileAccumulator_timeout();
-    void slot_on_acc_timeout();
-    void slot_on_setAlgorithm();
-	void slot_on_setMode();
     void slot_on_startAccumMile();
     void slot_on_stopAccumMile();
-    void slot_on_stretch();
-    void slot_on_retract();
+    void slot_on_acc50();
     void slot_on_acc85();
     void slot_on_acc90();
     void slot_on_acc95();
     void slot_on_acc100();
-    void slot_on_acc105();
+
 public slots:
     void slot_on_updateStatusTable(QString qstr);
     void slot_on_updateCAN304(QVector<int> vec);
     void slot_on_updateCAN305(QVector<int> vec);
     void slot_on_surfaceUpdate(CYJData cyj);
+    void slot_on_updateBeaconLength(QVector<int> vec);
 private:
     Ui::MainWindow *ui;
     CYJData m_cyjData_surface;
@@ -81,30 +91,32 @@ private:
 	SICK511 m_sick511_b;//Backward SICK511
     SICK400 m_sick400;
     CAN m_can;
+    DataSaver               m_dataSaver;
     SurfaceCommunication	m_surfaceComm;
     autoAlgorithm			m_algorithm;
     QTimer					m_timer_Teach;
     QTimer					m_timer_CAN;
+    QTimer					m_timer_DataSaver;
     QThread					m_thread_CAN;
+    QThread                 m_thread_dataSaver;
     QTimer					m_timer_main;
     QTimer					m_timer_surface;
     QTimer                  m_timer_mileAccumulator;
-    QTimer                  m_timer_acc;
-    /*************************************************************************
-     * vehicle states to surface
-	 *
-	/*************************************************************************/
-    Direction m_direction;
+    QMap<int, int>          m_map;
 	ControlMode m_controlMode;
     int m_mileInstant;//in cm
     int m_mileMeter;
     int m_speed;
-    int m_sendCount;
-    bool m_bIsDeacc;
     int _acc;
-    //test
-    int m_hydraulic1;
-    int m_hydraulic2;
+    int _deacc;
+    bool _sensorLost;
+    bool _forward;
+    bool _backward;
+    bool _neutral;
+    bool _stop;
+    int _maintimerCount;
+    bool _isBeaconFound;
+    int  _hydraulic;
     static const int LEFTLIMIT = 4;
     static const int RIGHTLIMNIT = 83;
 };

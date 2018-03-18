@@ -3,11 +3,12 @@
 #include <QThread>
 
 SurfaceCommunication::SurfaceCommunication(QObject *parent) : QObject(parent),
-    m_isOn(false)
+    m_isOn(false),
+    _doWorkCount(0)
 {
+     connect(&m_tcpSocket, SIGNAL(connected()), this, SLOT(slot_on_connected()));
      connect(&m_tcpSocket, SIGNAL(readyRead()), this, SLOT(slot_on_readMessage()));
      connect(&m_tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(slot_on_error(QAbstractSocket::SocketError)));
-    //qDebug()<<"surface construction current thread is:"<<QThread::currentThread();
 }
 
 void SurfaceCommunication::init(const QString ip, const int port)
@@ -19,8 +20,13 @@ void SurfaceCommunication::init(const QString ip, const int port)
     if (m_tcpSocket.waitForConnected(CONNECTMAXDELAY))
     {
         emit sig_statusTable("Surface Tcp Init Succeeded");
-        m_isOn = true;
+        qDebug()<<"Surface Tcp Init Succeeded";
     }
+}
+
+int SurfaceCommunication::doWorkCount() const
+{
+
 }
 //send data to surface
 void SurfaceCommunication::slot_doWork()
@@ -142,40 +148,182 @@ void SurfaceCommunication::slot_on_mainwindowUpdate(CYJData cyj)
     m_cyjData_actual.oil = 0;
     m_cyjData_actual.enddata = 0xFF;
 }
+
+void SurfaceCommunication::slot_on_addTickCount()
+{
+    if(_doWorkCount<32768)
+        _doWorkCount++;
+}
+
+void SurfaceCommunication::slot_on_connected()
+{
+    emit sig_statusTable("keep alive option set!");
+    m_tcpSocket.setSocketOption(QAbstractSocket::KeepAliveOption,1);
+}
 //receive data from surface
 void SurfaceCommunication::slot_on_readMessage()
 {
-    //qDebug()<<"SurfaceCommunication::slot_on_readMessage()";
-    m_tcpSocket.read((char *)&m_cyjData_surface,sizeof(m_cyjData_surface));
-    if(m_cyjData_surface.startdata1==0xAA&&m_cyjData_surface.startdata2==0x55&&m_cyjData_surface.enddata==0xFF)
-    emit sig_informMainwindow(m_cyjData_surface);
-//    qDebug()<<"===========================================>";
-//    qDebug()<<"data from surface forward:"<<m_cyjData_surface.forward;
-//    qDebug()<<"data from surface backward:"<<m_cyjData_surface.backward;
-//    qDebug()<<"data from surface neutral:"<<m_cyjData_surface.neutral;
-//    qDebug()<<"data from surface stop:"<<m_cyjData_surface.stop;
-//    qDebug()<<"data from surface scram:"<<m_cyjData_surface.scram;
-//    qDebug()<<"data from surface light:"<<m_cyjData_surface.light;
-//    qDebug()<<"data from surface horn:"<<m_cyjData_surface.horn;
-//    qDebug()<<"data from surface zero:"<<m_cyjData_surface.zero;
-//    qDebug()<<"data from surface start:"<<m_cyjData_surface.start;
-//    qDebug()<<"data from surface flameout:"<<m_cyjData_surface.flameout;
-//    qDebug()<<"data from surface middle:"<<m_cyjData_surface.middle;
-//    qDebug()<<"data from surface localRemote:"<<m_cyjData_surface.localRemote;
-//    qDebug()<<"data from surface manualVisual:"<<m_cyjData_surface.manualVisual;
-//    qDebug()<<"data from surface rise:"<<m_cyjData_surface.rise;
-//    qDebug()<<"data from surface fall:"<<m_cyjData_surface.fall;
-//    qDebug()<<"data from surface turn:"<<m_cyjData_surface.turn;
-//    qDebug()<<"data from surface back:"<<m_cyjData_surface.back;
-//    qDebug()<<"data from surface left:"<<m_cyjData_surface.left;
-//    qDebug()<<"data from surface right:"<<m_cyjData_surface.right;
-//    qDebug()<<"data from surface acc:"<<m_cyjData_surface.acc;
-//    qDebug()<<"data from surface deacc:"<<m_cyjData_surface.deacc;
+    //qDebug()<<"slot_on_readMessage";
+    int bytesNum = m_tcpSocket.bytesAvailable();
+    //qDebug()<<"bytes avalaible:"<<m_tcpSocket.bytesAvailable();
+    QByteArray allBytes = m_tcpSocket.readAll();
+    if(bytesNum<NUMBERONEFRAME)
+        return;
+    else
+    {
+//        char *data = new char[NUMBERONEFRAME + 1];
+//        strcpy(data, allBytes.right(NUMBERONEFRAME).data());
+//        strcpy((char *)&m_cyjData_surface, data);
+          QByteArray ba = allBytes.right(NUMBERONEFRAME);
+          m_cyjData_surface.startdata1 = ba.at(0);
+          m_cyjData_surface.startdata2 = ba.at(1);
+          if((ba.at(2))%2==1)
+          {
+              m_cyjData_surface.forward = 1;
+          }
+          else
+          {
+              m_cyjData_surface.forward = 0;
+          }
+          if((ba.at(2)/2)%2==1)
+          {
+              m_cyjData_surface.backward = 1;
+          }
+          else
+          {
+              m_cyjData_surface.backward = 0;
+          }
+          if((ba.at(2)/4)%2==1)
+          {
+              m_cyjData_surface.neutral = 1;
+          }
+          else
+          {
+              m_cyjData_surface.neutral = 0;
+          }
+          if((ba.at(2)/8)%2==1)
+          {
+              m_cyjData_surface.stop = 1;
+          }
+          else
+          {
+              m_cyjData_surface.stop = 0;
+          }
+
+          if((ba.at(2)/16)%2==1)
+          {
+              m_cyjData_surface.scram = 1;
+          }
+          else
+          {
+              m_cyjData_surface.scram = 0;
+          }
+
+          if((ba.at(2)/32)%2==1)
+          {
+              m_cyjData_surface.light = 1;
+          }
+          else
+          {
+              m_cyjData_surface.light = 0;
+          }
+
+          if((ba.at(2)/64)%2==1)
+          {
+              m_cyjData_surface.horn = 1;
+          }
+          else
+          {
+              m_cyjData_surface.horn = 0;
+          }
+        //for decrease the speed when switch auto to manual
+          m_cyjData_surface.zero = (ba.at(2)/128)%2;
+         // qDebug()<<"on or off"<<m_cyjData_surface.zero;
+
+          //extract control mode
+          //remote manual---2
+          //local manual---0
+          //local auto---1
+          //remote auto---3
+          //qDebug()<<"CYJ surface ba.at(3)%4:"<<ba.at(3)%4;
+          switch(ba.at(3)%4)
+          {
+          case 0:
+              m_cyjData_surface.localRemote = 0;
+              m_cyjData_surface.manualVisual = 0;
+              break;
+          case 1:
+              m_cyjData_surface.localRemote = 0;
+              m_cyjData_surface.manualVisual = 1;
+              break;
+          case 2:
+              m_cyjData_surface.localRemote = 1;
+              m_cyjData_surface.manualVisual = 0;
+              break;
+          case 3:
+              m_cyjData_surface.localRemote = 1;
+              m_cyjData_surface.manualVisual = 1;
+              break;
+          default:
+              break;
+          }
+          //extract engine start
+          m_cyjData_surface.start = (ba.at(3)/4)%2;
+          //extract engine stop
+          m_cyjData_surface.flameout = (ba.at(3)/8)%2;
+          //extract engine switch medium
+          m_cyjData_surface.middle = (ba.at(3)/16)%2;
+          //extract warn1
+          m_cyjData_surface.warn1 = (ba.at(3)/32)%2;
+          //extract warn2
+          m_cyjData_surface.warn2 = (ba.at(3)/64)%2;
+          //extract warn3
+          m_cyjData_surface.warn3 = (ba.at(3)/128)%2;
+
+          m_cyjData_surface.rise = ba.at(4);
+          m_cyjData_surface.fall = ba.at(5);
+          m_cyjData_surface.turn = ba.at(6);
+          m_cyjData_surface.back = ba.at(7);
+          m_cyjData_surface.left = ba.at(8);
+          m_cyjData_surface.right = ba.at(9);
+          m_cyjData_surface.acc = ba.at(10);
+          m_cyjData_surface.deacc = ba.at(11);
+          m_cyjData_surface.speed = 0;
+          m_cyjData_surface.engine = 0;
+          m_cyjData_surface.spliceAngle = 0;
+          m_cyjData_surface.oil = 0;
+          m_cyjData_surface.temperature = 0;
+          m_cyjData_surface.enddata = ba.at(17);
+//        qDebug()<<"===========================================>";
+//        qDebug()<<"data from surface forward:"<<m_cyjData_surface.forward;
+//        qDebug()<<"data from surface backward:"<<m_cyjData_surface.backward;
+//        qDebug()<<"data from surface neutral:"<<m_cyjData_surface.neutral;
+//        qDebug()<<"data from surface stop:"<<m_cyjData_surface.stop;
+//        qDebug()<<"data from surface scram:"<<m_cyjData_surface.scram;
+//        qDebug()<<"data from surface light:"<<m_cyjData_surface.light;
+//        qDebug()<<"data from surface horn:"<<m_cyjData_surface.horn;
+//        qDebug()<<"data from surface zero:"<<m_cyjData_surface.zero;
+//        qDebug()<<"data from surface start:"<<m_cyjData_surface.start;
+//        qDebug()<<"data from surface flameout:"<<m_cyjData_surface.flameout;
+//        qDebug()<<"data from surface middle:"<<m_cyjData_surface.middle;
+//        qDebug()<<"data from surface localRemote:"<<m_cyjData_surface.localRemote;
+//        qDebug()<<"data from surface manualVisual:"<<m_cyjData_surface.manualVisual;
+//        qDebug()<<"data from surface rise:"<<m_cyjData_surface.rise;
+//        qDebug()<<"data from surface fall:"<<m_cyjData_surface.fall;
+//        qDebug()<<"data from surface turn:"<<m_cyjData_surface.turn;
+//        qDebug()<<"data from surface back:"<<m_cyjData_surface.back;
+//        qDebug()<<"data from surface left:"<<m_cyjData_surface.left;
+//        qDebug()<<"data from surface right:"<<m_cyjData_surface.right;
+//        qDebug()<<"data from surface acc:"<<m_cyjData_surface.acc;
+//        qDebug()<<"data from surface deacc:"<<m_cyjData_surface.deacc;
+//        m_tcpSocket.read((char *)&m_cyjData_surface,sizeof(m_cyjData_surface));
+        if(m_cyjData_surface.startdata1==0xAA&&m_cyjData_surface.startdata2==0x55&&m_cyjData_surface.enddata==0xFF)
+        emit sig_informMainwindow(m_cyjData_surface);
+    }
 }
 
 void SurfaceCommunication::slot_on_error(QAbstractSocket::SocketError socktError)
 {
-    qDebug()<<"surface error";
     switch(socktError)
     {
     case QAbstractSocket::RemoteHostClosedError:

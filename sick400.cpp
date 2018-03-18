@@ -1,8 +1,10 @@
 #include "sick400.h"
 #include <QtCore>
 #include <QDebug>
+#include "assert.h"
 
-SICK400::SICK400(QObject *parent) : QObject(parent)
+SICK400::SICK400(QObject *parent) : QObject(parent),
+    _doWorkCount(0)
 {
     //typedef void (QAbstractSocket::*QAbstractSocketErrorSignal)(QAbstractSocket::SocketError);
     connect(&m_tcpSocket, SIGNAL(readyRead()), this, SLOT(slot_on_readMessage()));
@@ -66,8 +68,8 @@ void SICK400::continuousStop()
        <<quint8(0x6F)<<quint8(0x70)<<quint8(0x64)
       <<quint8(0x61)<<quint8(0x74)<<quint8(0x61)<<quint8(0x2B);
     emit sig_statusTable("SICK400 continuousStart block:"+block);
-    qDebug() << "request at:" << QTime::currentTime();
-    qDebug()<<"SICK400 continuousStart block:"<<block;
+    //qDebug() << "request at:" << QTime::currentTime();
+   // qDebug()<<"SICK400 continuousStart block:"<<block;
     m_tcpSocket.write(block);
 }
 
@@ -91,18 +93,28 @@ int SICK400::port() const
     return m_port;
 }
 
+int SICK400::doWorkCount() const
+{
+    return _doWorkCount;
+}
+
 void SICK400::extractData()
 {
-     if(m_dataRecieved.size()!=1097) return;
+    //qDebug()<<"SICK400 data string length:"<<m_dataRecieved.size();
+
+    if(m_dataRecieved.size()!=SIZEONEFRAME) return;
     m_distance.clear();
     m_ris.clear();
     char ba1,ba2,ba3;
+    assert(m_dataRecieved.size()>18);
     ba1 = m_dataRecieved.at(18);
     ba2 = m_dataRecieved.at(19);
     int dataNum = ba1 + 256*ba2;
     //qDebug()<<"SICK400 recv data number is:"<<dataNum;
     for(int i=0;i<dataNum;i++)
     {
+        //assert(m_dataRecieved.size()>30 + 3*i);
+        if(m_dataRecieved.size()<=30 + 3*i) return;
         ba1 = m_dataRecieved.at(28 + 3*i);
         ba2 = m_dataRecieved.at(29 + 3*i);
         ba3 = m_dataRecieved.at(30 + 3*i);
@@ -110,21 +122,24 @@ void SICK400::extractData()
         m_distance.append(dis);
         m_ris.append(ba3);
     }
-
     emit sigUpdateBeaconLength(beaconLength(250));
-    //qDebug()<<"SICK400 size of distance:"<<m_distance.size();
-    //qDebug()<<"SICK400 size of ris are:"<<m_ris.size();
-    //qDebug()<<"SICK400 distance are:"<<m_distance;
-    //qDebug()<<"SICK400 ris are:"<<m_ris;
-    //qDebug()<<"SICK400 beacon length are:"<<beaconLength(250);
+    _doWorkCount = 0;
+}
+
+void SICK400::extractData_new()
+{
+
 }
 
 QVector<int> SICK400::beaconLength(const int threshold)
 {
+    if((m_distance.size()!=DATASIZE)||(m_ris.size()!=DATASIZE))
+        return QVector<int>();
     QVector<int> binary_vec;
     QVector<int> beaconLength;
     //qDebug()<<"RIS are:"<<m_ris;
     //qDebug()<<"the dist are :"<<m_distance;
+
     for(int i = 0;i < m_ris.size();i++)
     {
         if(m_ris.at(i) > threshold)
@@ -167,7 +182,7 @@ QVector<int> SICK400::beaconLength(const int threshold)
     {
         int dist1_beacon = 0;
         int dist2_beacon = 0;
-        for(int ix = 0;ix < pos10_binary_vec.size(); ++ix)
+        for(int ix = 0;ix < pos10_binary_vec.size(); ix++)
         {
             if(binary_vec.first()==1||binary_vec.last()==1) continue;
             double angle_num = pos10_binary_vec.at(ix) - pos01_binary_vec.at(ix);
@@ -186,12 +201,24 @@ QVector<int> SICK400::beaconLength(const int threshold)
     return beaconLength;
 }
 
+void SICK400::splitByte(QString str, QList <QString> &data)
+{
+       QStringList list;
+       list=str.split(QRegExp(" "));
+       //qDebug()<<"list"<<list;
+       foreach (QString i,list)
+       {
+           data.append(i);
+       }
+}
+
 QVector<int> SICK400::Pro_binary(QVector<int> vec) const
 {
     QVector<int> Pro_vec = vec;
     QVector<int> expansion_vec ;
     QVector<int> corrosion_vec ;
     //expansion
+    assert(Pro_vec.size()>1);
     if(Pro_vec.at(0)+Pro_vec.at(1))
     {
         expansion_vec.push_back(1);
@@ -230,16 +257,25 @@ QVector<int> SICK400::Pro_binary(QVector<int> vec) const
         return corrosion_vec;
 }
 
+void SICK400::slot_on_addTickCount()
+{
+    if(_doWorkCount<32768)
+        _doWorkCount++;
+}
+
 void SICK400::slot_on_readMessage()
 {
+    QByteArray array;
     m_dataRecieved.clear();
-    m_dataRecieved = m_tcpSocket.readAll();
-    if(m_dataRecieved.size()==0)
+    array = m_tcpSocket.readAll();
+    //qDebug()<<"SICK400 array"<<array;
+    if(array.size()<SIZEONEFRAME)
     {
         emit sig_statusTable("SICK400 error:no data");
         return;
     }
-    //qDebug()<<"SICK 400 recv frame length is:"<<m_dataRecieved.size()<<endl;
+    assert(array.size()>=SIZEONEFRAME);
+    m_dataRecieved = array.right(SIZEONEFRAME);
     extractData();
 }
 

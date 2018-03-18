@@ -24,7 +24,7 @@ private:
     double _integration;
     double _allowError;
     QList<double> _errorList;
-    const static int INTEGRATIONLENGTH = 20;
+    const static int INTEGRATIONLENGTH = 100;
 };
 
 PID::PID(double dt,double max,double min,double Kp,double Kd,double Ki)
@@ -105,7 +105,7 @@ double PIDImpl::calculate(const double setpoint, const double pv)
     }
     //qDebug()<<"error * _dt"<<error * _dt;
     double Iout = _Ki * _integration;
-    //qDebug()<<"_integration:"<<_integration;
+   // qDebug()<<"Iout:"<<Iout;
     //qDebug()<<"_Ki:"<<_Ki;
      if(_allowError==15)
      {/*
@@ -115,7 +115,7 @@ double PIDImpl::calculate(const double setpoint, const double pv)
 
     //Total output
     double output = Pout + Dout + Iout;
-   // qDebug()<<"before max output:"<<output;
+    //qDebug()<<"before max output:"<<output<<":Pout:"<<Pout<<"Iout:"<<Iout<<"Dout:"<<Dout;
     //restrict to max/min
     if(output>_max)
         output = _max;

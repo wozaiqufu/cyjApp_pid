@@ -319,69 +319,69 @@
      </item>
     </layout>
    </widget>
-   <widget class="QPushButton" name="pushButton_acc5">
+   <widget class="QPushButton" name="pushButton_acc50">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>210</y>
+      <x>0</x>
+      <y>200</y>
       <width>141</width>
       <height>101</height>
      </rect>
     </property>
     <property name="text">
-     <string>5</string>
+     <string>50</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_acc60">
+   <widget class="QPushButton" name="pushButton_acc85">
     <property name="geometry">
      <rect>
-      <x>170</x>
-      <y>210</y>
-      <width>291</width>
+      <x>150</x>
+      <y>200</y>
+      <width>171</width>
       <height>91</height>
      </rect>
     </property>
     <property name="text">
-     <string>60</string>
+     <string>85</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_acc75">
+   <widget class="QPushButton" name="pushButton_acc90">
     <property name="geometry">
      <rect>
-      <x>500</x>
-      <y>210</y>
-      <width>51</width>
+      <x>330</x>
+      <y>200</y>
+      <width>101</width>
       <height>91</height>
      </rect>
     </property>
     <property name="text">
-     <string>75</string>
+     <string>90</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_acc88">
+   <widget class="QPushButton" name="pushButton_acc95">
     <property name="geometry">
      <rect>
-      <x>580</x>
-      <y>210</y>
-      <width>61</width>
+      <x>450</x>
+      <y>200</y>
+      <width>111</width>
       <height>81</height>
      </rect>
     </property>
     <property name="text">
-     <string>88</string>
+     <string>95</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_acc105">
+   <widget class="QPushButton" name="pushButton_acc100">
     <property name="geometry">
      <rect>
-      <x>650</x>
+      <x>570</x>
       <y>200</y>
       <width>131</width>
       <height>91</height>
      </rect>
     </property>
     <property name="text">
-     <string>105</string>
+     <string>100</string>
     </property>
    </widget>
   </widget>

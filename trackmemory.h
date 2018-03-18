@@ -18,12 +18,6 @@ public:
      * */
     QVector<int>  update(int mile, QVector<int> beaconLength);
     /*
-     * data are saved into beacon.txt in the TEACH stage
-     * @intput param length: beacon length
-     * @intput param mile: current mile
-     * */
-    bool saveBeacon(const int length,const int mile);
-    /*
      * data are saved into path.txt in the TEACH stage
      * @intput param mile: current mile
      * @intput param acc: command acc
@@ -31,15 +25,6 @@ public:
      * @intput param left: command left
      * @intput param right: command right
      * */
-    bool savePath(const int mile,const int acc,const int deacc,const int left,const int right);
-    /*
-     * permanently save data into beacon.dat and path.dat
-     * */
-    bool saveAll();
-    /*
-	* load data 
-	* @intput param fileName:which file data to be loaded
-	* */
 	bool loadData(const QString fileName);
     /*
     * load data

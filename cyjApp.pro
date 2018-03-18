@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     trackmemory.cpp \
     CAN.cpp \
     SICK511.cpp \
-    sick400.cpp
+    sick400.cpp \
+    datasaver.cpp
 
 HEADERS  += mainwindow.h \
     surfacecommunication.h \
@@ -29,6 +30,7 @@ HEADERS  += mainwindow.h \
     CAN.h \
     SICK511.h \
     cyjdata.h \
-    sick400.h
+    sick400.h \
+    datasaver.h
 
 FORMS    += mainwindow.ui
