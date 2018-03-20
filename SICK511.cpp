@@ -47,7 +47,6 @@ bool SICK511::init(const QString name, const QString ip, const int port)
     if (m_tcpSocket.waitForConnected(MILSECONDSWAIT))
 	{
         qDebug()<<m_name<<"init succeed!";
-		emit sig_statusTable(m_name + "init succeeded");
 		m_isOn = true;
 		return true;
 	}
@@ -82,14 +81,12 @@ void SICK511::continuousStop()
 
 void SICK511::slot_on_readMessage()
 {
+    qDebug()<<m_name<<" m_dataInUse:"<<m_dataInUse;
 	m_dataRecieved.clear();
     m_dataRecieved = m_tcpSocket.readAll();
-//    if(m_dataInUse)
-//        qDebug() << "SICK511 CLASS:SICK511 of " + m_name + " is in use";
     if(!m_dataInUse) return;
     extractDISTData();
     //extractRSSIData();
-    qDebug()<<"++++++++++++++++in use SICK:"<<m_name;
     emit sigUpdateCourseAngle(courseAngle());
     emit sigUpdateLateralOffset(lateralOffset(),m_name);
 }
@@ -250,7 +247,6 @@ void SICK511::slot_on_addTickCount()
 //calculate course angle
 int SICK511::courseAngle()
 {
-    //qDebug()<<"courseAngle";
 	if (!isDataLoaded())
 	{
 		return m_courseAngle;
@@ -339,7 +335,7 @@ int SICK511::courseAngle()
 		}
         //qDebug()<<"courseAngle_left"<<courseAngle_left;
         //m_courseAngle = (courseAngle_left + courseAngle_right) / 2;
-        m_courseAngle = courseAngle_right;
+        m_courseAngle = courseAngle_left;
         //qDebug()<<"courseangle of "<<m_name<<m_courseAngle;
 	}
 	//return (courseAngle_left+courseAngle_right)/2;
@@ -359,7 +355,6 @@ int SICK511::lateralOffset()
     //qDebug()<<"courseAngle is triggered!";
      //qDebug()<<"m_currentDirection:"<<m_currentDirection;
     //qDebug()<<"m_data_forward"<<m_data_forward;
-    int lateral = 1;
     if ((m_DISTdata.size() == DATANUMBER))
 	{
         //qDebug()<<"m_angleResolution>0.20"<<m_angleResolution;
@@ -411,10 +406,9 @@ int SICK511::lateralOffset()
 		}
         H2 = sumH2 / validCount;
         //lateral = (H2 - H1) / 2;
-        m_lateralOffset = H1;
+        m_lateralOffset = H2;
         qDebug()<<"lateral offset of "<<m_name<<m_lateralOffset;
 		return m_lateralOffset;
-
 	}
     else return m_lateralOffset;
 }

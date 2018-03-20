@@ -76,6 +76,7 @@ private slots:
     void slot_on_acc90();
     void slot_on_acc95();
     void slot_on_acc100();
+    void slot_on_startSensor();
 
 public slots:
     void slot_on_updateStatusTable(QString qstr);
@@ -117,6 +118,8 @@ private:
     int _maintimerCount;
     bool _isBeaconFound;
     int  _hydraulic;
+    bool _sensorIsRequested;
+    int _countAfterEngineStarted;
     static const int LEFTLIMIT = 4;
     static const int RIGHTLIMNIT = 83;
 };

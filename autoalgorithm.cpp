@@ -15,10 +15,16 @@ autoAlgorithm::autoAlgorithm(QObject *parent) : QObject(parent),
   m_spliceAnlge(0),
   m_trackAngle(0),
   m_angleCmm(0),
+  m_lateralOffset(0),
   _SICKName(),
-  p_disntancePID(0.005,20,-20,0.14,0.002,0.12),
-  p_anglePID    (0.005,80,-80,7,0.012,0.35),
-  p_TrackAnglePID(0.005,85,-80,20,0.2,40)
+  p_disntancePID(0.005,20,-20,0.15,0.0005,0.8),
+    p_anglePID    (0.005,85,-80,7,0.008,0.5),
+    p_TrackAnglePID(0.005,85,-80,20,0.2,40)
+
+
+
+
+
 //  p_speedPID    (0.005,105,0,01,0.001,0.01)
 {
     //p_track = new TrackMemory;
@@ -47,9 +53,9 @@ void autoAlgorithm::update()
     else
         qDebug()<<"CLASS Alg. Direction: BACKWARD,m_lateralOffset"<<m_lateralOffset;
 
-    double deltaSpliceAngle = p_disntancePID.calculate(400,m_lateralOffset);
+    double deltaSpliceAngle = p_disntancePID.calculate(500,m_lateralOffset);
     //qDebug()<<"m_lateralOffset:"<<m_lateralOffset;
-    double angleSet = deltaSpliceAngle;
+    double angleSet = 0-deltaSpliceAngle;
     //qDebug()<<"angleSet:"<<angleSet;
     double pidOut = p_anglePID.calculate(angleSet,m_spliceAnlge);
     //qDebug()<<"m_spliceAnlge:"<<m_spliceAnlge;
@@ -119,7 +125,6 @@ double autoAlgorithm::angle2Radius(const double an)
 
 void autoAlgorithm::slot_on_updateSICK511InUse(QString str)
 {
-    qDebug()<<"===========CLASS Alg. _SICKName:"<<_SICKName;
     _SICKName = str;
 }
 

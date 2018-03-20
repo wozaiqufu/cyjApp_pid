@@ -15,13 +15,15 @@ m_speed(0),
   _sensorLost(false),
   _acc(0),
   _deacc(0),
-  _forward(true),
+  _forward(false),
   _backward(false),
   _stop(false),
-  _neutral(false),
+  _neutral(true),
+  _sensorIsRequested(false),
   _maintimerCount(0),
   _isBeaconFound(false),
-  _hydraulic(0)
+  _hydraulic(0),
+  _countAfterEngineStarted(0)
 {
     ui->setupUi(this);
     initCYJActualData();
@@ -29,10 +31,6 @@ m_speed(0),
     //init CAN
     if( slot_on_initCAN())
         slot_on_readFrame();
-    //init SICK511
-    slot_on_initSICK511();
-    //init SICK400
-    slot_on_initSICK400();
     //init DataSaver
 //    initDataSaver();
     //loadData();
@@ -53,6 +51,7 @@ m_speed(0),
     connect(ui->pushButton_acc90,SIGNAL(clicked()),this,SLOT(slot_on_acc90()));
     connect(ui->pushButton_acc95,SIGNAL(clicked()),this,SLOT(slot_on_acc95()));
     connect(ui->pushButton_acc100,SIGNAL(clicked()),this,SLOT(slot_on_acc100()));
+    connect(ui->pushButton_startSensor,SIGNAL(clicked()),this,SLOT(slot_on_startSensor()));
     m_timer_mileAccumulator.start(200);
     m_timer_main.start(5);
     //signals:SICK400,slots:algorithm
@@ -161,7 +160,7 @@ void MainWindow::initCYJSurfaceData()
     m_cyjData_surface.horn = 0;
     m_cyjData_surface.zero = 1;
 //remember modify to 0 0 when in remote control
-    m_cyjData_surface.manualVisual = 1;
+    m_cyjData_surface.manualVisual = 0;
     m_cyjData_surface.localRemote = 1;
     m_cyjData_surface.start = 0;
     m_cyjData_surface.flameout = 0;
@@ -199,7 +198,7 @@ void MainWindow::updateAcc()
                 _acc = 85;
                 return;
             }
-           if(_acc<50)
+           if(_acc<80)
            {
                _acc += 10;
                return;
@@ -220,11 +219,11 @@ void MainWindow::updateDirection()
 {
     if(_maintimerCount==20)
     {
-        qDebug()<<"deacc:"<<_deacc;
-        qDebug()<<"_stop:"<<_stop;
-        qDebug()<<"_forward:"<<_forward;
-        qDebug()<<"_backward:"<<_backward;
-        qDebug()<<"_neutral:"<<_neutral;
+//        qDebug()<<"deacc:"<<_deacc;
+//        qDebug()<<"_stop:"<<_stop;
+//        qDebug()<<"_forward:"<<_forward;
+//        qDebug()<<"_backward:"<<_backward;
+//        qDebug()<<"_neutral:"<<_neutral;
         if(m_cyjData_surface.zero==0||_isBeaconFound)
         {
             if(_acc==0)
@@ -248,8 +247,8 @@ void MainWindow::updateDirection()
                 _forward = m_cyjData_surface.forward;
                 _backward = m_cyjData_surface.backward;
                 _neutral = m_cyjData_surface.neutral;
-                qDebug()<<"_forward:"<<_forward;
-                qDebug()<<"_backward:"<<_backward;
+//                qDebug()<<"_forward:"<<_forward;
+//                qDebug()<<"_backward:"<<_backward;
             }
         }
     }
@@ -362,7 +361,7 @@ void MainWindow::slot_on_initSICK511()
 	{
 		m_sick511_f.continuousStart();
 	}
-   m_sick511_f.useData(true);
+   m_sick511_f.useData(false);
 	if (m_sick511_b.init("backward", "192.168.1.51", 2111))
 	{
 		m_sick511_b.continuousStart();
@@ -436,10 +435,41 @@ INFORM:
 *************************/
 void MainWindow::slot_on_mainTimer_timeout()
 {
+    if(m_cyjData_actual.engine>75){
+        qDebug()<<"slot_on_initSICK511";
+        if(_countAfterEngineStarted<750)
+            _countAfterEngineStarted++;
+        if(!_sensorIsRequested&&_countAfterEngineStarted==750){
+            //init SICK511
+            slot_on_initSICK511();
+            //init SICK400
+            slot_on_initSICK400();
+            _sensorIsRequested = true;
+            }
+        }
     updateControlMode();
     updateData2DataSaver();
     updateData2Surface();
     //updateData2Algorithm();
+//    qDebug()<<"m_cyjData_surface.forward:"<<m_cyjData_surface.forward;
+//    qDebug()<<"m_cyjData_surface.backward:"<<m_cyjData_surface.backward;
+//    qDebug()<<"m_cyjData_surface.stop:"<<m_cyjData_surface.stop;
+//    qDebug()<<"m_cyjData_surface.start:"<<m_cyjData_surface.start;
+//    qDebug()<<"m_cyjData_surface.flameout:"<<m_cyjData_surface.flameout;
+//    qDebug()<<"m_cyjData_actual.engine:"<<m_cyjData_actual.engine;
+    if(m_cyjData_surface.forward&&!m_cyjData_surface.backward){
+        m_sick511_f.useData(true);
+        m_sick511_b.useData(false);
+    }
+    else if(m_cyjData_surface.backward&&!m_cyjData_surface.forward){
+            m_sick511_f.useData(false);
+            m_sick511_b.useData(true);
+    }
+    else{
+        m_sick511_f.useData(false);
+        m_sick511_b.useData(false);
+    }
+
     if(m_controlMode==Auto)
     {
         if(_maintimerCount<20)
@@ -448,16 +478,6 @@ void MainWindow::slot_on_mainTimer_timeout()
         }
         else
             _maintimerCount = 0;
-        qDebug()<<"m_cyjData_actual.forward:"<<m_cyjData_actual.forward;
-        qDebug()<<"m_cyjData_actual.backward:"<<m_cyjData_actual.backward;
-        if(m_cyjData_actual.forward&&!m_cyjData_actual.backward){
-            m_sick511_f.useData(true);
-            m_sick511_b.useData(false);
-        }
-        if(m_cyjData_actual.backward&&!m_cyjData_actual.forward){
-            m_sick511_f.useData(false);
-            m_sick511_b.useData(true);
-        }
         emit sig_addTickCount();
         emit sig_informAlgrithmMile(m_mileMeter);
         emit sig_spliceAngle2Algorithm(m_cyjData_actual.spliceAngle-(LEFTLIMIT+RIGHTLIMNIT)/2);
@@ -630,6 +650,13 @@ void MainWindow::slot_on_acc95()
 void MainWindow::slot_on_acc100()
 {
     _acc = 100;
+}
+
+void MainWindow::slot_on_startSensor()
+{
+    slot_on_initSICK511();
+    //init SICK400
+    slot_on_initSICK400();
 }
 
 void MainWindow::slot_on_updateCAN304(QVector<int> vec)
